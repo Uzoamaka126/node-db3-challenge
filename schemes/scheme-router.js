@@ -75,27 +75,36 @@ router.post('/:id/steps', (req, res) => {
 });
 
 router
-  .put('/:id', (req, res) => {
-    const { id } = req.params;
-    const changes = req.body;
+  .put('/:id', validateId, (req, res) => {
+  //   const { id } = req.params;
+  //   const changes = req.body;
 
-  Schemes.findById(id)
-  .then(scheme => {
-    if (scheme) {
-      Schemes.update(changes, id)
-      .then(updatedScheme => {
-        res.json(updatedScheme);
-      });
-    } else {
-      res.status(404).json({ message: 'Could not find scheme with given id' });
-    }
-  })
-  .catch (err => {
-    res.status(500).json({ message: 'Failed to update scheme' });
-  });
+  // Schemes.findById(id)
+  // .then(scheme => {
+  //   if (scheme) {
+  //     Schemes.update(changes, id)
+  //     .then(updatedScheme => {
+  //       res.json(updatedScheme);
+  //     });
+  //   } else {
+  //     res.status(404).json({ message: 'Could not find scheme with given id' });
+  //   }
+  // })
+  // .catch (err => {
+  //   res.status(500).json({ message: 'Failed to update scheme' });
+  // });
+  Schemes.update(req.params.id, req.body)
+    .then(scheme => {
+      res.status(200).json(scheme);
+    })
+    .catch(err => {
+      res.status(500).json({
+        message: 'Error updating scheme' + error.message
+      })
+    })
 });
 
-router.delete('/:id', (req, res) => {
+router.delete('/:id', validateId, (req, res) => {
   const { id } = req.params;
 
   Schemes.remove(id)
@@ -110,5 +119,32 @@ router.delete('/:id', (req, res) => {
     res.status(500).json({ message: 'Failed to delete scheme' });
   });
 });
+
+// Custom middlewares
+function validateId(req, res, next) {
+  const { id } = req.params;
+  if(Number(id) == id) {
+      Schemes.findById(id)
+      .then(user => {
+          if(user) {
+              req.user = user;
+              next()
+          } else {
+              res.status(400).json({
+                  message: 'Invalid user id'
+              });
+          }
+      })
+      .catch(error => {
+          res.status(500).json({
+              message: 'Something came up when we were checking the user id' + error.message,
+          });
+      });
+  } else {
+      return res.status(400).json({
+          message: 'This id format is wrong'
+      })
+  }
+}
 
 module.exports = router;
